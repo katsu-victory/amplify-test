@@ -1,25 +1,34 @@
 import { type ClientSchema, a, defineData } from '@aws-amplify/backend';
 
 const schema = a.schema({
-  // 1. 研究プロジェクト
-  Project: a.model({
-    name: a.string().required(),
-    description: a.string(),
-    subjects: a.hasMany('Subject', 'projectId'), // プロジェクトは複数の被験者を持つ
-  }).authorization(allow => [allow.publicApiKey()]),
-
-  // 2. 被験者（Subject）
   Subject: a.model({
-    subjectId: a.string().required(), // S001 など
+    subjectId: a.string().required(),
     name: a.string(),
-    projectId: a.id(),
-    project: a.belongsTo('Project', 'projectId'),
-    // 運動強度設定（調整用パラメータ）
-    targetIntensity: a.float(),       // 45% など
+    targetIntensity: a.float(),
     currentVo2max: a.float(),
-    lastStatus: a.string(),           // Active, Rest など
-  }).authorization(allow => [allow.publicApiKey()]),
+    menuType: a.string(),
+    durationMinutes: a.integer(),
+    lastStatus: a.string(),
+  }).authorization(allow => [
+    allow.authenticated(), // ログインしていれば誰でも全操作可能（開発用）
+  ]),
+
+  ActivityLog: a.model({
+    subjectId: a.string().required(),
+    type: a.string(),
+    duration: a.integer(),
+    intensity: a.float(),
+    timestamp: a.datetime(),
+  }).authorization(allow => [
+    allow.authenticated(), // ログインしていれば誰でも全操作可能（開発用）
+  ]),
 });
 
 export type Schema = ClientSchema<typeof schema>;
-export const data = defineData({ schema });
+export const data = defineData({
+  schema,
+  authorizationModes: {
+    // API Keyではなく、ログイン情報を優先するように変更
+    defaultAuthorizationMode: 'userPool',
+  },
+});
